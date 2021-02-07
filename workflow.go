@@ -213,6 +213,11 @@ func (a *StandardAction) ActionName() string {
 }
 
 func (a *StandardAction) Process() {
+	defer func() {
+		if r := recover(); r != nil {
+			a.workFlow.cancelFunc()
+		}
+	}()
 	go func() {
 		if a.processingFunc != nil {
 			result := a.processingFunc()
