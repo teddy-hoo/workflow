@@ -2,7 +2,6 @@ package workflow
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"time"
 )
@@ -77,9 +76,8 @@ func (wf *WorkFlow) Run() bool {
 	if len(wf.states) <= 0 {
 		return false
 	}
-	for name, state := range wf.states {
+	for _, state := range wf.states {
 		s := state
-		fmt.Println(name + " entering...")
 		go func() {
 			s.Enter()
 		}()
@@ -91,13 +89,10 @@ func (wf *WorkFlow) Run() bool {
 	}()
 	select {
 	case <- wf.cancelContext.Done():
-		fmt.Println("Workflow canceled...")
 		return false
 	case <- ch:
-		fmt.Println("Workflow done...")
 		return true
 	case <- time.After(wf.timeout):
-		fmt.Println("Workflow timeout...")
 		return false
 	}
 }
@@ -151,9 +146,7 @@ func (s *StandardState) StateName() string {
 }
 
 func (s *StandardState) Enter() {
-	fmt.Println(s.stateName + " is waiting...")
 	s.wg.Wait()
-	fmt.Println(s.stateName + " reached, spawn all post actions...")
 	for _, action := range s.postActions {
 		a := action
 		go func() {
@@ -164,7 +157,6 @@ func (s *StandardState) Enter() {
 }
 
 func (s *StandardState) Leave() <- chan struct{} {
-	fmt.Println(s.stateName + " leaving...")
 	ch := make(chan struct{})
 	defer func() {
 		close(ch)
@@ -221,7 +213,6 @@ func (a *StandardAction) ActionName() string {
 }
 
 func (a *StandardAction) Process() {
-	fmt.Println(a.actionName + " is processing...")
 	go func() {
 		if a.processingFunc != nil {
 			result := a.processingFunc()
@@ -231,7 +222,6 @@ func (a *StandardAction) Process() {
 				close(a.failChan)
 			}
 		}
-		time.Sleep(time.Second)
 	}()
 	select {
 	case <- a.doneChan:
